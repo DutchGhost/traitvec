@@ -50,12 +50,12 @@ impl<T: ?Sized> InnerVec<T> {
     }
 
     /// Returns an Iterator with shared access to the trait object `T`
-    pub fn iter<'a>(self: Pin<&'a Self>) -> impl Iterator<Item = &'a T> {
+    pub fn iter<'s>(self: Pin<&'s Self>) -> impl Iterator<Item = &'s T> {
         self.as_reference().iter().map(|boxed| &**boxed)
     }
 
     /// Returns an Iterator with mutable access to the trait object `T`
-    pub fn iter_mut<'a>(self: Pin<&'a mut Self>) -> impl Iterator<Item = &'a mut T> {
+    pub fn iter_mut<'s>(self: Pin<&'s mut Self>) -> impl Iterator<Item = &'s mut T> {
         self.as_mutreference().iter_mut().map(|boxed| &mut **boxed)
     }
 }
