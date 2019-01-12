@@ -19,8 +19,6 @@ fn test() {
         assert!(*vec == vec![1, 2, 3, 4]);
     }
 
-    for _ in v.as_mut().drain(..) {
-
-    }
+    for _ in v.as_mut().drain(..) {}
     drop(v);
 }
