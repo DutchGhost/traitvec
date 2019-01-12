@@ -6,12 +6,12 @@ use std::{
 };
 
 /// This struct holds a Vector of trait objects `T`.
-/// 
+///
 /// No instance of this struct can be made by a method,
 /// use [`TraitVec`] instead.
 pub struct InnerVec<T: ?Sized> {
-    pub inner: UnsafeCell<Vec<Box<T>>>,
-    pub _pinned: PhantomPinned,
+    inner: UnsafeCell<Vec<Box<T>>>,
+    _pinned: PhantomPinned,
 }
 
 impl<T: ?Sized> InnerVec<T> {
@@ -30,7 +30,7 @@ impl<T: ?Sized> InnerVec<T> {
     }
 
     /// Pushes any type `U` implementing trait `T`, returning a mutable reference to `U`.
-    pub fn push<'s, U>(self: Pin<&'s mut Self>, item: U) -> &'s mut U
+    pub fn push<'s, U>(self: Pin<&'s Self>, item: U) -> Pin<&'s mut U>
     where
         U: Unsize<T>,
     {
@@ -45,7 +45,7 @@ impl<T: ?Sized> InnerVec<T> {
 
             (&mut *(self.inner.get())).push(boxed);
 
-            ret
+            Pin::new_unchecked(ret)
         }
     }
 
@@ -66,9 +66,9 @@ pub struct TraitVec<T: ?Sized> {
 
 impl<T: ?Sized> TraitVec<T> {
     /// Constructs a new `TraitVec`, wrapped within a [`Pin`].
-    /// 
+    ///
     /// The Pin is used to guarantee that the underlying [`InnerVec`] isn't moved.
-    /// 
+    ///
     /// Methods of the [`InnerVec`], like [`InnerVec::push`],
     /// can be accessed trough [`Pin::as_mut`] and [`Pin::as_ref`].
     pub fn new() -> Pin<Self> {
