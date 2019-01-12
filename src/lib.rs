@@ -7,7 +7,7 @@ fn test() {
     use crate::traitvec::TraitVec;
     use std::pin::Pin;
 
-    let v: Pin<TraitVec<dyn std::fmt::Debug>> = TraitVec::new();
+    let mut v: Pin<TraitVec<dyn std::fmt::Debug>> = TraitVec::new();
     {
         let x = v.as_ref().push(1);
 
@@ -17,6 +17,10 @@ fn test() {
         assert!(*x == 1);
 
         assert!(*vec == vec![1, 2, 3, 4]);
+    }
+
+    for _ in v.as_mut().drain(..) {
+
     }
     drop(v);
 }

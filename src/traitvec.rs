@@ -18,15 +18,18 @@ impl<T: ?Sized> InnerVec<T> {
     fn new() -> Self {
         Self {
             inner: UnsafeCell::new(Vec::new()),
+
+            // This struct may not move,
+            // as long as there is still a reference returned from push() alive.
             _pinned: PhantomPinned,
         }
     }
-    fn as_reference<'s>(self: Pin<&'s Self>) -> &'s Vec<Box<T>> {
-        unsafe { &*self.inner.get() }
+    fn as_reference<'s>(self: Pin<&'s Self>) -> Pin<&'s Vec<Box<T>>> {
+        Pin::new(unsafe { &*self.inner.get() })
     }
 
-    fn as_mutreference<'s>(self: Pin<&'s mut Self>) -> &'s mut Vec<Box<T>> {
-        unsafe { &mut *self.inner.get() }
+    fn as_mutreference<'s>(self: Pin<&'s mut Self>) -> Pin<&'s mut Vec<Box<T>>> {
+        Pin::new(unsafe { &mut *self.inner.get() })
     }
 
     /// Pushes any type `U` implementing trait `T`, returning a mutable reference to `U`.
@@ -51,12 +54,21 @@ impl<T: ?Sized> InnerVec<T> {
 
     /// Returns an Iterator with shared access to the trait object `T`
     pub fn iter<'s>(self: Pin<&'s Self>) -> impl Iterator<Item = &'s T> {
-        self.as_reference().iter().map(|boxed| &**boxed)
+        Pin::get_ref(self.as_reference()).iter().map(|boxed| &**boxed)
     }
 
     /// Returns an Iterator with mutable access to the trait object `T`
     pub fn iter_mut<'s>(self: Pin<&'s mut Self>) -> impl Iterator<Item = &'s mut T> {
-        self.as_mutreference().iter_mut().map(|boxed| &mut **boxed)
+        Pin::get_mut(self.as_mutreference()).iter_mut().map(|boxed| &mut **boxed)
+    }
+
+    /// Returns a draining Iterator that removes the specified range in the vector,
+    /// and yields the removed items.
+    pub fn drain<'s, R>(self: Pin<&'s mut Self>, range: R) -> impl Iterator<Item = Box<T>> + 's
+    where
+        R: std::ops::RangeBounds<usize>, 
+    {
+        Pin::get_mut(self.as_mutreference()).drain(range)
     }
 }
 
@@ -98,12 +110,12 @@ impl<T: ?Sized> std::ops::Index<usize> for Pin<TraitVec<T>> {
     type Output = T;
 
     fn index(&self, idx: usize) -> &Self::Output {
-        &self.as_ref().as_reference()[idx]
+        &Pin::get_ref(self.as_ref().as_reference())[idx]
     }
 }
 
 impl<T: ?Sized> std::ops::IndexMut<usize> for Pin<TraitVec<T>> {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
-        &mut self.as_mut().as_mutreference()[idx]
+        &mut Pin::get_mut(self.as_mut().as_mutreference())[idx]
     }
 }
